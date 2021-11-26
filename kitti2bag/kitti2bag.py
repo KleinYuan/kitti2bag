@@ -280,10 +280,10 @@ def run_kitti2bag():
     
     # CAMERAS
     cameras = [
-        (0, 'camera_gray_left', '/kitti/camera_gray_left'),
-        (1, 'camera_gray_right', '/kitti/camera_gray_right'),
-        (2, 'camera_color_left', '/kitti/camera_color_left'),
-        (3, 'camera_color_right', '/kitti/camera_color_right')
+        (0, '/sensor/camera/grayscale/left', '/sensor/camera/grayscale/left'),
+        (1, '/sensor/camera/grayscale/right', '/sensor/camera/grayscale/right'),
+        (2, '/sensor/camera/color/left', '/sensor/camera/color/left'),
+        (3, '/sensor/camera/color/right', '/sensor/camera/color/right')
     ]
 
     if args.kitti_type.find("raw") != -1:
@@ -313,8 +313,8 @@ def run_kitti2bag():
             imu_topic = '/kitti/oxts/imu'
             gps_fix_topic = '/kitti/oxts/gps/fix'
             gps_vel_topic = '/kitti/oxts/gps/vel'
-            velo_frame_id = 'velo_link'
-            velo_topic = '/kitti/velo'
+            velo_frame_id = '/sensor/velodyne'
+            velo_topic = '/sensor/velodyne/cloud_euclidean'
 
             T_base_link_to_imu = np.eye(4, 4)
             T_base_link_to_imu[0:3, 3] = [-2.71/2.0-0.05, 0.32, 0.93]
