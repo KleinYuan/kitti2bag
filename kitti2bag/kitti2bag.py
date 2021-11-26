@@ -114,7 +114,7 @@ def save_camera_data(bag, kitti_type, kitti, util, bridge, camera, camera_frame_
         
         calib = CameraInfo()
         calib.header.frame_id = camera_frame_id
-        calib.width, calib.height = tuple(util['S_rect_{}'.format(camera_pad)].tolist())
+        calib.height, calib.width  = tuple(util['S_rect_{}'.format(camera_pad)].tolist())
         calib.distortion_model = 'plumb_bob'
         calib.K = util['K_{}'.format(camera_pad)]
         calib.R = util['R_rect_{}'.format(camera_pad)]
@@ -144,7 +144,11 @@ def save_camera_data(bag, kitti_type, kitti, util, bridge, camera, camera_frame_
         image_message.header.frame_id = camera_frame_id
         if kitti_type.find("raw") != -1:
             image_message.header.stamp = rospy.Time.from_sec(float(datetime.strftime(dt, "%s.%f")))
-            topic_ext = "/image_raw"
+            # the synced folder contains image that is already rectified. And it's not correct to call it raw
+            if kitti_type.find("sync") != -1:
+                topic_ext = "/image_rect"
+            else:
+                topic_ext = "/image_raw"
         elif kitti_type.find("odom") != -1:
             image_message.header.stamp = rospy.Time.from_sec(dt)
             topic_ext = "/image_rect"
@@ -186,10 +190,10 @@ def save_velo_data(bag, kitti, velo_frame_id, topic):
         fields = [PointField('x', 0, PointField.FLOAT32, 1),
                   PointField('y', 4, PointField.FLOAT32, 1),
                   PointField('z', 8, PointField.FLOAT32, 1),
-                  PointField('i', 12, PointField.FLOAT32, 1)]
+                  PointField('intensity', 12, PointField.FLOAT32, 1)]
         pcl_msg = pcl2.create_cloud(header, fields, scan)
 
-        bag.write(topic + '/pointcloud', pcl_msg, t=pcl_msg.header.stamp)
+        bag.write(topic, pcl_msg, t=pcl_msg.header.stamp)
 
 
 def get_static_transform(from_frame_id, to_frame_id, transform):
