@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sys
-
+import fire
 try:
     import pykitti
 except ImportError as e:
@@ -23,7 +23,7 @@ import sensor_msgs.point_cloud2 as pcl2
 from geometry_msgs.msg import TransformStamped, TwistStamped, Transform
 from cv_bridge import CvBridge
 import numpy as np
-import argparse
+
 
 def save_imu_data(bag, kitti, imu_frame_id, topic):
     print("Exporting IMU")
@@ -45,17 +45,17 @@ def save_imu_data(bag, kitti, imu_frame_id, topic):
         bag.write(topic, imu, t=imu.header.stamp)
 
 
-def save_dynamic_tf(bag, kitti, kitti_type, initial_time):
+def save_dynamic_tf(bag, kitti, kitti_type, initial_time, T_cam0_imu=None):
     print("Exporting time dependent transformations")
     if kitti_type.find("raw") != -1:
         for timestamp, oxts in zip(kitti.timestamps, kitti.oxts):
             tf_oxts_msg = TFMessage()
             tf_oxts_transform = TransformStamped()
             tf_oxts_transform.header.stamp = rospy.Time.from_sec(float(timestamp.strftime("%s.%f")))
-            tf_oxts_transform.header.frame_id = 'world'
-            tf_oxts_transform.child_frame_id = 'base_link'
+            tf_oxts_transform.header.frame_id = '/local_cs'
+            tf_oxts_transform.child_frame_id = '/sensor/camera' # /sensor/camera is  camera_left
 
-            transform = (oxts.T_w_imu)
+            transform = oxts.T_w_imu.dot(inv(T_cam0_imu))
             t = transform[0:3, 3]
             q = tf.transformations.quaternion_from_matrix(transform)
             oxts_tf = Transform()
@@ -80,8 +80,8 @@ def save_dynamic_tf(bag, kitti, kitti_type, initial_time):
             tf_msg = TFMessage()
             tf_stamped = TransformStamped()
             tf_stamped.header.stamp = rospy.Time.from_sec(timestamp)
-            tf_stamped.header.frame_id = 'world'
-            tf_stamped.child_frame_id = 'camera_left'
+            tf_stamped.header.frame_id = '/local_cs'
+            tf_stamped.child_frame_id = '/sensor/camera' # /sensor/camera is  camera_left
             
             t = tf_matrix[0:3, 3]
             q = tf.transformations.quaternion_from_matrix(tf_matrix)
@@ -258,20 +258,16 @@ def save_gps_vel_data(bag, kitti, gps_frame_id, topic):
         bag.write(topic, twist_msg, t=twist_msg.header.stamp)
 
 
-def run_kitti2bag():
-    parser = argparse.ArgumentParser(description = "Convert KITTI dataset to ROS bag file the easy way!")
+def run_kitti2bag(kitti_type, data_dir, date, drive, sequence=None):
+    print("run_kitti2bag called: \nkitti_type shall be one of ['raw_synced', 'odom_color', 'odom_gray'], "
+          "date shall be something like 2011_09_26\n"
+          "drive shall be something like 0002\n")
     # Accepted argument values
     kitti_types = ["raw_synced", "odom_color", "odom_gray"]
     odometry_sequences = []
     for s in range(22):
         odometry_sequences.append(str(s).zfill(2))
-    
-    parser.add_argument("kitti_type", choices = kitti_types, help = "KITTI dataset type")
-    parser.add_argument("dir", nargs = "?", default = os.getcwd(), help = "base directory of the dataset, if no directory passed the deafult is current working directory")
-    parser.add_argument("-t", "--date", help = "date of the raw dataset (i.e. 2011_09_26), option is only for RAW datasets.")
-    parser.add_argument("-r", "--drive", help = "drive number of the raw dataset (i.e. 0001), option is only for RAW datasets.")
-    parser.add_argument("-s", "--sequence", choices = odometry_sequences,help = "sequence of the odometry dataset (between 00 - 21), option is only for ODOMETRY datasets.")
-    args = parser.parse_args()
+
 
     bridge = CvBridge()
     compression = rosbag.Compression.NONE
@@ -286,19 +282,19 @@ def run_kitti2bag():
         (3, '/sensor/camera/color/right', '/sensor/camera/color/right')
     ]
 
-    if args.kitti_type.find("raw") != -1:
+    if kitti_type.find("raw") != -1:
     
-        if args.date == None:
+        if date == None:
             print("Date option is not given. It is mandatory for raw dataset.")
             print("Usage for raw dataset: kitti2bag raw_synced [dir] -t <date> -r <drive>")
             sys.exit(1)
-        elif args.drive == None:
+        elif drive == None:
             print("Drive option is not given. It is mandatory for raw dataset.")
             print("Usage for raw dataset: kitti2bag raw_synced [dir] -t <date> -r <drive>")
             sys.exit(1)
         
-        bag = rosbag.Bag("kitti_{}_drive_{}_{}.bag".format(args.date, args.drive, args.kitti_type[4:]), 'w', compression=compression)
-        kitti = pykitti.raw(args.dir, args.date, args.drive)
+        bag = rosbag.Bag("kitti_{}_drive_{}_{}.bag".format(date, drive, kitti_type[4:]), 'w', compression=compression)
+        kitti = pykitti.raw(data_dir, date, drive)
         if not os.path.exists(kitti.data_path):
             print('Path {} does not exists. Exiting.'.format(kitti.data_path))
             sys.exit(1)
@@ -320,6 +316,14 @@ def run_kitti2bag():
             T_base_link_to_imu[0:3, 3] = [-2.71/2.0-0.05, 0.32, 0.93]
 
             # tf_static
+            # /sensor/camera (/sensor/camera/grayscale/left) -> /sensor/velodyne
+            # /sensor/camera -> /sensor/camera/color/left
+            # /sensor/camera -> /sensor/camera/color/right
+            # /sensor/camera -> /sensor/camera/grayscale/left
+            # /sensor/camera -> /sensor/camera/grayscale/left
+            """
+            # Below is the old code
+            # I modify below for my own experiments
             transforms = [
                 ('base_link', imu_frame_id, T_base_link_to_imu),
                 (imu_frame_id, velo_frame_id, inv(kitti.calib.T_velo_imu)),
@@ -328,17 +332,25 @@ def run_kitti2bag():
                 (imu_frame_id, cameras[2][1], inv(kitti.calib.T_cam2_imu)),
                 (imu_frame_id, cameras[3][1], inv(kitti.calib.T_cam3_imu))
             ]
+            """
+            transforms = [
+                ('/sensor/camera', '/sensor/velodyne', kitti.calib.T_cam0_imu.dot(kitti.calib.T_velo_imu)),
+                ('/sensor/camera', cameras[0][1], kitti.calib.T_cam0_imu.dot(inv(kitti.calib.T_cam0_imu))),
+                ('/sensor/camera', cameras[1][1], kitti.calib.T_cam0_imu.dot(inv(kitti.calib.T_cam1_imu))),
+                ('/sensor/camera', cameras[2][1], kitti.calib.T_cam0_imu.dot(inv(kitti.calib.T_cam2_imu))),
+                ('/sensor/camera', cameras[3][1], kitti.calib.T_cam0_imu.dot(inv(kitti.calib.T_cam3_imu)))
+            ]
 
             util = pykitti.utils.read_calib_file(os.path.join(kitti.calib_path, 'calib_cam_to_cam.txt'))
 
             # Export
             save_static_transforms(bag, transforms, kitti.timestamps)
-            save_dynamic_tf(bag, kitti, args.kitti_type, initial_time=None)
+            save_dynamic_tf(bag, kitti, kitti_type, initial_time=None, T_cam0_imu=kitti.calib.T_cam0_imu)
             save_imu_data(bag, kitti, imu_frame_id, imu_topic)
             save_gps_fix_data(bag, kitti, imu_frame_id, gps_fix_topic)
             save_gps_vel_data(bag, kitti, imu_frame_id, gps_vel_topic)
             for camera in cameras:
-                save_camera_data(bag, args.kitti_type, kitti, util, bridge, camera=camera[0], camera_frame_id=camera[1], topic=camera[2], initial_time=None)
+                save_camera_data(bag, kitti_type, kitti, util, bridge, camera=camera[0], camera_frame_id=camera[1], topic=camera[2], initial_time=None)
             save_velo_data(bag, kitti, velo_frame_id, velo_topic)
 
         finally:
@@ -346,16 +358,16 @@ def run_kitti2bag():
             print(bag)
             bag.close()
             
-    elif args.kitti_type.find("odom") != -1:
+    elif kitti_type.find("odom") != -1:
         
-        if args.sequence == None:
+        if sequence == None:
             print("Sequence option is not given. It is mandatory for odometry dataset.")
             print("Usage for odometry dataset: kitti2bag {odom_color, odom_gray} [dir] -s <sequence>")
             sys.exit(1)
             
-        bag = rosbag.Bag("kitti_data_odometry_{}_sequence_{}.bag".format(args.kitti_type[5:],args.sequence), 'w', compression=compression)
+        bag = rosbag.Bag("kitti_data_odometry_{}_sequence_{}.bag".format(kitti_type[5:],sequence), 'w', compression=compression)
         
-        kitti = pykitti.odometry(args.dir, args.sequence)
+        kitti = pykitti.odometry(data_dir, sequence)
         if not os.path.exists(kitti.sequence_path):
             print('Path {} does not exists. Exiting.'.format(kitti.sequence_path))
             sys.exit(1)
@@ -367,25 +379,28 @@ def run_kitti2bag():
             print('Dataset is empty? Exiting.')
             sys.exit(1)
             
-        if args.sequence in odometry_sequences[:11]:
-            print("Odometry dataset sequence {} has ground truth information (poses).".format(args.sequence))
+        if sequence in odometry_sequences[:11]:
+            print("Odometry dataset sequence {} has ground truth information (poses).".format(sequence))
             kitti.load_poses()
 
         try:
-            util = pykitti.utils.read_calib_file(os.path.join(args.dir,'sequences',args.sequence, 'calib.txt'))
+            util = pykitti.utils.read_calib_file(os.path.join(data_dir,'sequences',sequence, 'calib.txt'))
             current_epoch = (datetime.utcnow() - datetime(1970, 1, 1)).total_seconds()
             # Export
-            if args.kitti_type.find("gray") != -1:
+            if kitti_type.find("gray") != -1:
                 used_cameras = cameras[:2]
-            elif args.kitti_type.find("color") != -1:
+            elif kitti_type.find("color") != -1:
                 used_cameras = cameras[-2:]
 
-            save_dynamic_tf(bag, kitti, args.kitti_type, initial_time=current_epoch)
+            save_dynamic_tf(bag, kitti, kitti_type, initial_time=current_epoch)
             for camera in used_cameras:
-                save_camera_data(bag, args.kitti_type, kitti, util, bridge, camera=camera[0], camera_frame_id=camera[1], topic=camera[2], initial_time=current_epoch)
+                save_camera_data(bag, kitti_type, kitti, util, bridge, camera=camera[0], camera_frame_id=camera[1], topic=camera[2], initial_time=current_epoch)
 
         finally:
             print("## OVERVIEW ##")
             print(bag)
             bag.close()
 
+
+if __name__ == '__main__':
+    fire.Fire()

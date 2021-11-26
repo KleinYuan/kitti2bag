@@ -67,9 +67,9 @@ Taking the `2011_09_26_drive_0093_sync` above as an exmaple, you shall put those
 
 ```
 docker run -it  \
- -v /foo/2011_09_26:/data \
+ -v /foo:/data \
  -v ${PWD}/kitti2bag:/kitti2bag/kitti2bag \
- kitti2bag -v bash
+ kitti2bag bash
 ```
 
 And then you will be in the shell and if you do `ls`, you shall see:
@@ -83,7 +83,11 @@ root@8d9c20c69c15:/data# ls
 
 ```
 source "/opt/ros/$ROS_DISTRO/setup.bash"
-kitti2bag -t 2011_09_26 -r 0093 raw_synced .
+python /kitti2bag/kitti2bag/kitti2bag.py run_kitti2bag \
+--kitti_type raw_synced \
+--data_dir /data \
+--date 2011_09_26 \
+--drive 0093
 ```
 
 And you shall see the following logs:
@@ -140,10 +144,17 @@ And then you will see a bag named as `kitti_2011_09_26_drive_0093_synced.bag` ly
 ### Step5 Change the Code
 
 Sometimes, you wanna change the rule of the conversion, namely, editing the code in [kitti2bag.py](kitti2bag/kitti2bag.py),
-then you can just edit it and then run
+then you can just edit it and then run the same
 
 ```
-pip install -e /kitti2bag
+python /kitti2bag/kitti2bag/kitti2bag.py run_kitti2bag \
+--kitti_type raw_synced \
+--data_dir /data \
+--date 2011_09_26 \
+--drive 0093
 ```
 
 And do the conversion again!
+
+The main difference from this code and the original one is that I replaced the args/egg with python-fire,
+so that you can just use the script as a command line tool.
