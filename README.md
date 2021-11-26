@@ -92,24 +92,24 @@ Exporting static transformations
 Exporting time dependent transformations
 Exporting IMU
 Exporting camera 0
-100% (77 of 77) |##########################| Elapsed Time: 0:00:00 Time: 0:00:00
+100% (433 of 433) |#######################################################################################################################################| Elapsed Time: 0:00:02 Time:  0:00:02
 Exporting camera 1
-100% (77 of 77) |##########################| Elapsed Time: 0:00:00 Time: 0:00:00
+100% (433 of 433) |#######################################################################################################################################| Elapsed Time: 0:00:02 Time:  0:00:02
 Exporting camera 2
-100% (77 of 77) |##########################| Elapsed Time: 0:00:01 Time: 0:00:01
+100% (433 of 433) |#######################################################################################################################################| Elapsed Time: 0:00:04 Time:  0:00:04
 Exporting camera 3
-100% (77 of 77) |##########################| Elapsed Time: 0:00:01 Time: 0:00:01
+100% (433 of 433) |#######################################################################################################################################| Elapsed Time: 0:00:04 Time:  0:00:04
 Exporting velodyne data
-100% (77 of 77) |##########################| Elapsed Time: 0:00:15 Time: 0:00:15
+100% (433 of 433) |#######################################################################################################################################| Elapsed Time: 0:01:17 Time:  0:01:17
 ## OVERVIEW ##
-path:        kitti_2011_09_26_drive_0002_synced.bag
+path:        kitti_2011_09_26_drive_0093_synced.bag
 version:     2.0
-duration:    7.8s
-start:       Sep 26 2011 13:02:44.33 (1317042164.33)
-end:         Sep 26 2011 13:02:52.16 (1317042172.16)
-size:        417.2 MB
-messages:    1078
-compression: none [308/308 chunks]
+duration:    44.7s
+start:       Sep 26 2011 15:18:33.02 (1317050313.02)
+end:         Sep 26 2011 15:19:17.72 (1317050357.72)
+size:        2.3 GB
+messages:    6062
+compression: none [1732/1732 chunks]
 types:       geometry_msgs/TwistStamped [98d34b0043a2093cf9d9345ab6eef12e]
              sensor_msgs/CameraInfo     [c9a58c1b0b154e0e6da7578cb991d214]
              sensor_msgs/Image          [060021388200f6f0f447d0fcd9c64743]
@@ -117,20 +117,20 @@ types:       geometry_msgs/TwistStamped [98d34b0043a2093cf9d9345ab6eef12e]
              sensor_msgs/NavSatFix      [2d3a8cd499b9b4a0249fb98fd05cfa48]
              sensor_msgs/PointCloud2    [1158d486dd51d683ce2f1be655c3c181]
              tf2_msgs/TFMessage         [94810edda583a504dfda3829e70d7eec]
-topics:      /kitti/camera_color_left/camera_info    77 msgs    : sensor_msgs/CameraInfo    
-             /kitti/camera_color_left/image_raw      77 msgs    : sensor_msgs/Image         
-             /kitti/camera_color_right/camera_info   77 msgs    : sensor_msgs/CameraInfo    
-             /kitti/camera_color_right/image_raw     77 msgs    : sensor_msgs/Image         
-             /kitti/camera_gray_left/camera_info     77 msgs    : sensor_msgs/CameraInfo    
-             /kitti/camera_gray_left/image_raw       77 msgs    : sensor_msgs/Image         
-             /kitti/camera_gray_right/camera_info    77 msgs    : sensor_msgs/CameraInfo    
-             /kitti/camera_gray_right/image_raw      77 msgs    : sensor_msgs/Image         
-             /kitti/oxts/gps/fix                     77 msgs    : sensor_msgs/NavSatFix     
-             /kitti/oxts/gps/vel                     77 msgs    : geometry_msgs/TwistStamped
-             /kitti/oxts/imu                         77 msgs    : sensor_msgs/Imu           
-             /kitti/velo/pointcloud                  77 msgs    : sensor_msgs/PointCloud2   
-             /tf                                     77 msgs    : tf2_msgs/TFMessage        
-             /tf_static                              77 msgs    : tf2_msgs/TFMessage
+topics:      /kitti/camera_color_left/camera_info    433 msgs    : sensor_msgs/CameraInfo    
+             /kitti/camera_color_left/image_raw      433 msgs    : sensor_msgs/Image         
+             /kitti/camera_color_right/camera_info   433 msgs    : sensor_msgs/CameraInfo    
+             /kitti/camera_color_right/image_raw     433 msgs    : sensor_msgs/Image         
+             /kitti/camera_gray_left/camera_info     433 msgs    : sensor_msgs/CameraInfo    
+             /kitti/camera_gray_left/image_raw       433 msgs    : sensor_msgs/Image         
+             /kitti/camera_gray_right/camera_info    433 msgs    : sensor_msgs/CameraInfo    
+             /kitti/camera_gray_right/image_raw      433 msgs    : sensor_msgs/Image         
+             /kitti/oxts/gps/fix                     433 msgs    : sensor_msgs/NavSatFix     
+             /kitti/oxts/gps/vel                     433 msgs    : geometry_msgs/TwistStamped
+             /kitti/oxts/imu                         433 msgs    : sensor_msgs/Imu           
+             /kitti/velo/pointcloud                  433 msgs    : sensor_msgs/PointCloud2   
+             /tf                                     433 msgs    : tf2_msgs/TFMessage        
+             /tf_static                              433 msgs    : tf2_msgs/TFMessage
 ```
 
 And then you will see a bag named as `kitti_2011_09_26_drive_0093_synced.bag` lying there.
