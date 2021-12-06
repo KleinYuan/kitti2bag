@@ -87,7 +87,7 @@ python /kitti2bag/kitti2bag/kitti2bag.py run_kitti2bag \
 --kitti_type raw_synced \
 --data_dir /data \
 --date 2011_09_26 \
---drive 0093
+--drive d0093
 ```
 
 And you shall see the following logs:
@@ -151,7 +151,7 @@ python /kitti2bag/kitti2bag/kitti2bag.py run_kitti2bag \
 --kitti_type raw_synced \
 --data_dir /data \
 --date 2011_09_26 \
---drive 0093
+--drive d0093
 ```
 
 And do the conversion again!
